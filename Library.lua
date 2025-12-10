@@ -1,5 +1,5 @@
--- c00lgui Reborn Rc7 - точная реплика оригинального дизайна
--- Основано на скриншоте c00lgui.png
+-- c00lgui Reborn Rc7 - точная реплика с белым текстом
+-- Добавлена функция скрытия/показа меню
 
 local library = {}
 
@@ -13,6 +13,7 @@ end
 local RED = Color3.fromRGB(255, 0, 0)
 local WHITE = Color3.fromRGB(255, 255, 255)
 local BLACK = Color3.fromRGB(0, 0, 0)
+local GRAY = Color3.fromRGB(100, 100, 100) -- Только для "Empty"
 
 --=== MAIN WINDOW ===--
 function library:CreateWindow(title)
@@ -26,13 +27,14 @@ function library:CreateWindow(title)
     local ScreenGui = Create("ScreenGui", {
         Parent = game.CoreGui,
         Name = "c00lgui_Reborn_Rc7",
-        ResetOnSpawn = false
+        ResetOnSpawn = false,
+        Enabled = true
     })
 
     -- Основное окно
     local Main = Create("Frame", {
         Parent = ScreenGui,
-        Size = UDim2.new(0, 600, 0, 400),  -- Увеличил ширину для 4 колонок
+        Size = UDim2.new(0, 600, 0, 400),
         Position = UDim2.new(0.5, -300, 0.5, -200),
         BackgroundColor3 = BLACK,
         BorderColor3 = RED,
@@ -40,7 +42,7 @@ function library:CreateWindow(title)
         Active = true
     })
 
-    -- Заголовок
+    -- Заголовок (БЕЛЫЙ ТЕКСТ)
     local Title = Create("TextLabel", {
         Parent = Main,
         Size = UDim2.new(1, 0, 0, 25),
@@ -48,7 +50,7 @@ function library:CreateWindow(title)
         BorderColor3 = RED,
         BorderSizePixel = 2,
         Text = title or "c00lgui Reborn Rc7",
-        TextColor3 = RED,  -- КРАСНЫЙ текст в заголовке как на скриншоте!
+        TextColor3 = WHITE,  -- ИСПРАВЛЕНО: был RED, теперь WHITE
         Font = Enum.Font.SourceSansBold,
         TextSize = 18
     })
@@ -96,7 +98,7 @@ function library:CreateWindow(title)
     -- Контентная область
     local Content = Create("Frame", {
         Parent = Main,
-        Size = UDim2.new(1, 0, 1, -60),  -- Учитываем заголовок и кнопку закрытия
+        Size = UDim2.new(1, 0, 1, -60),
         Position = UDim2.new(0, 0, 0, 25),
         BackgroundTransparency = 1,
         ClipsDescendants = true
@@ -122,7 +124,7 @@ function library:CreateWindow(title)
         UIColumns[i] = column
     end
 
-    -- Стрелки для переключения страниц
+    -- Стрелки для переключения страниц (БЕЛЫЙ ТЕКСТ)
     local LeftArrow = Create("TextButton", {
         Parent = Content,
         Size = UDim2.new(0, 30, 0, 30),
@@ -131,10 +133,10 @@ function library:CreateWindow(title)
         BorderColor3 = RED,
         BorderSizePixel = 1,
         Text = "<",
-        TextColor3 = RED,
+        TextColor3 = WHITE,  -- ИСПРАВЛЕНО: был RED, теперь WHITE
         Font = Enum.Font.SourceSansBold,
         TextSize = 20,
-        Visible = false  -- Показываем только если есть страницы
+        Visible = false
     })
 
     local RightArrow = Create("TextButton", {
@@ -145,7 +147,7 @@ function library:CreateWindow(title)
         BorderColor3 = RED,
         BorderSizePixel = 1,
         Text = ">",
-        TextColor3 = RED,
+        TextColor3 = WHITE,  -- ИСПРАВЛЕНО: был RED, теперь WHITE
         Font = Enum.Font.SourceSansBold,
         TextSize = 20,
         Visible = false
@@ -194,7 +196,7 @@ function library:CreateWindow(title)
         end
     end)
 
-    -- Кнопка закрытия
+    -- Кнопка закрытия (БЕЛЫЙ ТЕКСТ)
     local Close = Create("TextButton", {
         Parent = Main,
         Size = UDim2.new(1, 0, 0, 35),
@@ -203,7 +205,7 @@ function library:CreateWindow(title)
         BorderColor3 = RED,
         BorderSizePixel = 2,
         Text = "Close",
-        TextColor3 = RED,  -- КРАСНЫЙ текст как на скриншоте
+        TextColor3 = WHITE,  -- ИСПРАВЛЕНО: был RED, теперь WHITE
         Font = Enum.Font.SourceSansBold,
         TextSize = 18
     })
@@ -244,15 +246,15 @@ function library:CreateWindow(title)
 
     --=== ЭЛЕМЕНТЫ ИНТЕРФЕЙСА ===--
 
-    -- 1. Кнопка (компактная, как на скриншоте)
+    -- 1. Кнопка (БЕЛЫЙ ТЕКСТ)
     function self:Button(text, callback, column)
         local button = Create("TextButton", {
             BackgroundColor3 = BLACK,
             BorderColor3 = RED,
             BorderSizePixel = 1,
-            Size = UDim2.new(1, -4, 0, 25),  -- Более компактная высота
+            Size = UDim2.new(1, -4, 0, 25),
             Text = text,
-            TextColor3 = WHITE,
+            TextColor3 = WHITE,  -- БЕЛЫЙ
             Font = Enum.Font.SourceSans,
             TextSize = 14,
             AutoButtonColor = false
@@ -274,7 +276,7 @@ function library:CreateWindow(title)
         return addElementToPage(button, column)
     end
 
-    -- 2. Тоггл (компактный)
+    -- 2. Тоггл (БЕЛЫЙ ТЕКСТ)
     function self:Toggle(text, default, callback, column)
         local value = default or false
         
@@ -284,7 +286,7 @@ function library:CreateWindow(title)
             BorderSizePixel = 1,
             Size = UDim2.new(1, -4, 0, 25),
             Text = text .. " : " .. (value and "ON" or "OFF"),
-            TextColor3 = WHITE,
+            TextColor3 = WHITE,  -- БЕЛЫЙ
             Font = Enum.Font.SourceSans,
             TextSize = 14,
             AutoButtonColor = false
@@ -308,7 +310,7 @@ function library:CreateWindow(title)
         return addElementToPage(toggle, column)
     end
 
-    -- 3. Заголовок раздела (как "Wozawa Scripts", "Scan/Tools")
+    -- 3. Заголовок раздела (БЕЛЫЙ ТЕКСТ)
     function self:Section(title, column)
         local section = Create("TextLabel", {
             BackgroundColor3 = BLACK,
@@ -316,7 +318,7 @@ function library:CreateWindow(title)
             BorderSizePixel = 1,
             Size = UDim2.new(1, -4, 0, 20),
             Text = title,
-            TextColor3 = RED,  -- Красный текст для заголовков
+            TextColor3 = WHITE,  -- ИСПРАВЛЕНО: был RED, теперь WHITE
             Font = Enum.Font.SourceSansBold,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Center
@@ -325,7 +327,7 @@ function library:CreateWindow(title)
         return addElementToPage(section, column)
     end
 
-    -- 4. Плейсхолдер "Empty" как на скриншоте
+    -- 4. Плейсхолдер "Empty" (СЕРЫЙ ТЕКСТ - как на скриншоте)
     function self:Empty(column)
         local empty = Create("TextLabel", {
             BackgroundColor3 = BLACK,
@@ -333,7 +335,7 @@ function library:CreateWindow(title)
             BorderSizePixel = 1,
             Size = UDim2.new(1, -4, 0, 25),
             Text = "Empty",
-            TextColor3 = Color3.fromRGB(100, 100, 100),  -- Серый текст
+            TextColor3 = GRAY,  -- СЕРЫЙ (единственный не белый!)
             Font = Enum.Font.SourceSans,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Center
@@ -342,7 +344,7 @@ function library:CreateWindow(title)
         return addElementToPage(empty, column)
     end
 
-    -- 5. Слайдер (компактный)
+    -- 5. Слайдер (БЕЛЫЙ ТЕКСТ)
     function self:Slider(text, min, max, default, callback, column)
         local sliderFrame = Create("Frame", {
             BackgroundColor3 = BLACK,
@@ -356,7 +358,7 @@ function library:CreateWindow(title)
             Size = UDim2.new(1, 0, 0, 15),
             BackgroundTransparency = 1,
             Text = text,
-            TextColor3 = WHITE,
+            TextColor3 = WHITE,  -- БЕЛЫЙ
             Font = Enum.Font.SourceSans,
             TextSize = 12,
             TextXAlignment = Enum.TextXAlignment.Left
@@ -384,7 +386,7 @@ function library:CreateWindow(title)
             Position = UDim2.new(1, -45, 0, 0),
             BackgroundTransparency = 1,
             Text = tostring(default),
-            TextColor3 = RED,
+            TextColor3 = WHITE,  -- ИСПРАВЛЕНО: был RED, теперь WHITE
             Font = Enum.Font.SourceSansBold,
             TextSize = 12,
             TextXAlignment = Enum.TextXAlignment.Right
@@ -414,7 +416,7 @@ function library:CreateWindow(title)
         return addElementToPage(sliderFrame, column)
     end
 
-    -- 6. Текстовое поле
+    -- 6. Текстовое поле (БЕЛЫЙ ТЕКСТ)
     function self:TextBox(text, placeholder, callback, column)
         local container = Create("Frame", {
             BackgroundColor3 = BLACK,
@@ -428,7 +430,7 @@ function library:CreateWindow(title)
             Size = UDim2.new(1, 0, 0, 15),
             BackgroundTransparency = 1,
             Text = text,
-            TextColor3 = WHITE,
+            TextColor3 = WHITE,  -- БЕЛЫЙ
             Font = Enum.Font.SourceSans,
             TextSize = 12,
             TextXAlignment = Enum.TextXAlignment.Left
@@ -443,7 +445,8 @@ function library:CreateWindow(title)
             BorderSizePixel = 1,
             Text = "",
             PlaceholderText = placeholder or "Enter...",
-            TextColor3 = WHITE,
+            TextColor3 = WHITE,  -- БЕЛЫЙ
+            PlaceholderColor3 = GRAY,  -- Серый для подсказки
             Font = Enum.Font.SourceSans,
             TextSize = 14,
             ClearTextOnFocus = false
@@ -452,6 +455,126 @@ function library:CreateWindow(title)
         textBox.FocusLost:Connect(function(enterPressed)
             if callback and enterPressed then
                 callback(textBox.Text)
+            end
+        end)
+        
+        return addElementToPage(container, column)
+    end
+
+    -- 7. Dropdown (БЕЛЫЙ ТЕКСТ)
+    function self:Dropdown(text, options, default, callback, column)
+        local container = Create("Frame", {
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Size = UDim2.new(1, -4, 0, 40),
+            ClipsDescendants = true
+        })
+        
+        local label = Create("TextLabel", {
+            Parent = container,
+            Size = UDim2.new(1, 0, 0, 15),
+            BackgroundTransparency = 1,
+            Text = text,
+            TextColor3 = WHITE,  -- БЕЛЫЙ
+            Font = Enum.Font.SourceSans,
+            TextSize = 12,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        
+        local dropdownBtn = Create("TextButton", {
+            Parent = container,
+            Size = UDim2.new(1, -10, 0, 20),
+            Position = UDim2.new(0, 5, 0, 18),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Text = options[default] or "Select...",
+            TextColor3 = WHITE,  -- БЕЛЫЙ
+            Font = Enum.Font.SourceSans,
+            TextSize = 14,
+            AutoButtonColor = false
+        })
+        
+        dropdownBtn.MouseEnter:Connect(function()
+            dropdownBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        end)
+        
+        dropdownBtn.MouseLeave:Connect(function()
+            dropdownBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        end)
+        
+        local dropdownOpen = false
+        local dropdownFrame = Create("Frame", {
+            Parent = container,
+            Size = UDim2.new(1, -10, 0, 0),
+            Position = UDim2.new(0, 5, 0, 40),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Visible = false,
+            ClipsDescendants = true
+        })
+        
+        local UIListLayout = Create("UIListLayout", {
+            Parent = dropdownFrame,
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        
+        dropdownBtn.MouseButton1Click:Connect(function()
+            dropdownOpen = not dropdownOpen
+            dropdownFrame.Visible = dropdownOpen
+            
+            if dropdownOpen then
+                dropdownFrame.Size = UDim2.new(1, -10, 0, math.min(#options * 25, 100))
+            end
+        end)
+        
+        local selectedValue = default
+        for i, option in pairs(options) do
+            local optionBtn = Create("TextButton", {
+                Parent = dropdownFrame,
+                Size = UDim2.new(1, 0, 0, 25),
+                BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+                BorderColor3 = RED,
+                BorderSizePixel = 1,
+                Text = option,
+                TextColor3 = WHITE,  -- БЕЛЫЙ
+                Font = Enum.Font.SourceSans,
+                TextSize = 14,
+                AutoButtonColor = false,
+                LayoutOrder = i
+            })
+            
+            optionBtn.MouseEnter:Connect(function()
+                optionBtn.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+            end)
+            
+            optionBtn.MouseLeave:Connect(function()
+                optionBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            end)
+            
+            optionBtn.MouseButton1Click:Connect(function()
+                selectedValue = i
+                dropdownBtn.Text = option
+                dropdownOpen = false
+                dropdownFrame.Visible = false
+                if callback then callback(i, option) end
+            end)
+        end
+        
+        -- Закрытие dropdown при клике вне его
+        game:GetService("UserInputService").InputBegan:Connect(function(input)
+            if dropdownOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+                local absPos = container.AbsolutePosition
+                local absSize = container.AbsoluteSize
+                
+                if not (mousePos.X >= absPos.X and mousePos.X <= absPos.X + absSize.X and
+                       mousePos.Y >= absPos.Y and mousePos.Y <= absPos.Y + absSize.Y + 100) then
+                    dropdownOpen = false
+                    dropdownFrame.Visible = false
+                end
             end
         end)
         
@@ -490,14 +613,40 @@ function library:CreateWindow(title)
         end
     end
     
-    -- Показать/скрыть окно
-    function self:SetVisible(visible)
-        ScreenGui.Enabled = visible
+    -- ПОКАЗАТЬ/СКРЫТЬ МЕНЮ (НОВАЯ ФУНКЦИЯ)
+    function self:ToggleVisibility()
+        ScreenGui.Enabled = not ScreenGui.Enabled
+        return ScreenGui.Enabled
+    end
+    
+    -- Показать меню
+    function self:Show()
+        ScreenGui.Enabled = true
+    end
+    
+    -- Скрыть меню
+    function self:Hide()
+        ScreenGui.Enabled = false
+    end
+    
+    -- Проверить видимость
+    function self:IsVisible()
+        return ScreenGui.Enabled
     end
     
     -- Уничтожить окно
     function self:Destroy()
         ScreenGui:Destroy()
+    end
+    
+    -- Установить позицию окна
+    function self:SetPosition(x, y)
+        Main.Position = UDim2.new(0, x, 0, y)
+    end
+    
+    -- Получить позицию окна
+    function self:GetPosition()
+        return Main.Position
     end
     
     -- Инициализация отображения
