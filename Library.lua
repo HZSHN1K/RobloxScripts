@@ -60,58 +60,99 @@ function library:CreateWindow(title, opts)
     })
 
     -- Titlebar
-    local Title = Create("TextLabel", {
-        Name = "Title",
-        Parent = Main,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = BG,
-        BorderColor3 = BORDER,
-        BorderSizePixel = 2,
-        Text = title or "c00lgui Reborn",
-        TextColor3 = TXT,
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 18,
-        TextXAlignment = Enum.TextXAlignment.Center
-    })
+    -- (внутри CreateWindow, после создания Main frame)
 
-    -- Page arrows and label
-    local ArrowLeft = Create("TextButton", {
-        Parent = Main,
-        Name = "ArrowLeft",
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(0, 2, 0, 0),
-        BackgroundColor3 = BG,
-        BorderColor3 = BORDER,
-        BorderSizePixel = 2,
-        Text = "<",
-        TextColor3 = TXT,
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 20
-    })
-    local ArrowRight = Create("TextButton", {
-        Parent = Main,
-        Name = "ArrowRight",
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -32, 0, 0),
-        BackgroundColor3 = BG,
-        BorderColor3 = BORDER,
-        BorderSizePixel = 2,
-        Text = ">",
-        TextColor3 = TXT,
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 20
-    })
-    local PageLabel = Create("TextLabel", {
-        Parent = Main,
-        Name = "PageLabel",
-        Size = UDim2.new(0, 120, 0, 30),
-        Position = UDim2.new(0.5, -60, 0, 0),
-        BackgroundTransparency = 1,
-        TextColor3 = TXT,
-        Text = "Page 1 / 1",
-        Font = Enum.Font.SourceSans,
-        TextSize = 14
-    })
+-- Добавим ZIndex-ранжирование
+    Main.ClipsDescendants = true
+    
+    -- Переназначим создание Title, Content, Pages и т.п. с ZIndex
+    Title.ZIndex = 2
+    Content.ZIndex = 1
+    -- Когда создаёшь страницы (frames) — укажи ZIndex = 1 или 2 по необходимости
+    
+    -- ===== Drag (по заголовку Title) =====
+    do
+        local UIS = game:GetService("UserInputService")
+        local dragging = false
+        local dragStart
+        local startPos
+    
+        Title.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = Main.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+    
+        Title.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                dragInput = input
+            end
+        end)
+    
+        UIS.InputChanged:Connect(function(input)
+            if dragging and input == dragInput then
+                local delta = input.Position - dragStart
+                Main.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+    end
+    
+    -- ===== Resize: ручка в правом-нижнем углу =====
+    do
+        local UIS = game:GetService("UserInputService")
+        local resizer = Instance.new("Frame")
+        resizer.Name = "Resizer"
+        resizer.Size = UDim2.new(0, 16, 0, 16)
+        resizer.AnchorPoint = Vector2.new(1, 1)
+        resizer.Position = UDim2.new(1, 0, 1, 0)
+        resizer.BackgroundColor3 = BORDER
+        resizer.BorderSizePixel = 0
+        resizer.Parent = Main
+        resizer.ZIndex = 3
+    
+        local resizing = false
+        local startMouse, startSize
+    
+        resizer.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                resizing = true
+                startMouse = UIS:GetMouseLocation()
+                startSize = Main.Size
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        resizing = false
+                    end
+                end)
+            end
+        end)
+    
+        UIS.InputChanged:Connect(function(input)
+            if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = UIS:GetMouseLocation() - startMouse
+                Main.Size = UDim2.new(
+                    startSize.X.Scale,
+                    startSize.X.Offset + delta.X,
+                    startSize.Y.Scale,
+                    startSize.Y.Offset + delta.Y
+                )
+            end
+        end)
+    end
+
+-- После этого — остальной UI: страницы, элементы, layout...
+
 
     -- Content frame and pages container
     local Content = Create("Frame", {
@@ -773,3 +814,4 @@ end
 
 -- Return the module-like table
 return exported
+
