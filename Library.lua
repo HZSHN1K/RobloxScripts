@@ -1,6 +1,6 @@
--- c00lgui-style UI Library (Enhanced version)
+-- c00lgui-style UI Library (Enhanced version - No Icons)
 -- Сохраняет оригинальный черно-красный дизайн
--- Добавлены новые элементы и функции
+-- Без иконок, чистый минимализм
 
 local library = {}
 
@@ -21,7 +21,8 @@ function library:CreateWindow(title)
 
     local ScreenGui = Create("ScreenGui", {
         Parent = game.CoreGui,
-        Name = "c00lgui_UI_" .. math.random(10000, 99999)
+        Name = "c00lgui_UI_" .. math.random(10000, 99999),
+        ResetOnSpawn = false
     })
 
     local Main = Create("Frame", {
@@ -31,11 +32,10 @@ function library:CreateWindow(title)
         BackgroundColor3 = BLACK,
         BorderColor3 = RED,
         BorderSizePixel = 2,
-        Active = true,
-        Draggable = false  -- Будет включено после добавления drag-функции
+        Active = true
     })
 
-    -- Добавляем возможность перетаскивания
+    -- Перетаскивание окна
     local dragging = false
     local dragInput, dragStart, startPos
 
@@ -51,7 +51,6 @@ function library:CreateWindow(title)
         TextSize = 20
     })
 
-    -- Функция перетаскивания окна
     local function updateDrag(input)
         local delta = input.Position - dragStart
         Main.Position = UDim2.new(
@@ -88,7 +87,7 @@ function library:CreateWindow(title)
         end
     end)
 
-    local Content = Create("ScrollingFrame", {  -- Изменено на ScrollingFrame для поддержки многих элементов
+    local Content = Create("ScrollingFrame", {
         Parent = Main,
         Size = UDim2.new(1, 0, 1, -105),
         Position = UDim2.new(0, 0, 0, 35),
@@ -116,7 +115,7 @@ function library:CreateWindow(title)
         BackgroundColor3 = BLACK,
         BorderColor3 = RED,
         BorderSizePixel = 2,
-        Text = "Закрыть",
+        Text = "Close",
         TextColor3 = WHITE,
         Font = Enum.Font.SourceSansBold,
         TextSize = 20
@@ -126,7 +125,7 @@ function library:CreateWindow(title)
         ScreenGui:Destroy()
     end)
 
-    --=== НОВЫЕ ЭЛЕМЕНТЫ ===--
+    --=== НОВЫЕ ЭЛЕМЕНТЫ (без иконок) ===--
 
     -- 1. Текстовое поле (TextBox)
     function self:TextBox(text, placeholder, callback)
@@ -157,7 +156,7 @@ function library:CreateWindow(title)
             BorderColor3 = RED,
             BorderSizePixel = 1,
             Text = "",
-            PlaceholderText = placeholder or "Введите текст...",
+            PlaceholderText = placeholder or "Enter text...",
             TextColor3 = WHITE,
             Font = Enum.Font.SourceSans,
             TextSize = 16,
@@ -202,7 +201,7 @@ function library:CreateWindow(title)
             BackgroundColor3 = Color3.fromRGB(20, 20, 20),
             BorderColor3 = RED,
             BorderSizePixel = 1,
-            Text = options[default] or "Выберите...",
+            Text = options[default] or "Select...",
             TextColor3 = WHITE,
             Font = Enum.Font.SourceSans,
             TextSize = 16
@@ -302,39 +301,8 @@ function library:CreateWindow(title)
         return separator
     end
 
-    -- 5. Кнопка с иконкой (IconButton)
-    function self:IconButton(text, icon, callback)
-        local button = Create("TextButton", {
-            Parent = Content,
-            BackgroundColor3 = BLACK,
-            BorderColor3 = RED,
-            BorderSizePixel = 2,
-            Text = "  " .. text,
-            TextColor3 = WHITE,
-            Font = Enum.Font.SourceSansBold,
-            TextSize = 16,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-
-        if icon then
-            local iconLabel = Create("TextLabel", {
-                Parent = button,
-                Size = UDim2.new(0, 20, 1, 0),
-                Position = UDim2.new(0, 5, 0, 0),
-                BackgroundTransparency = 1,
-                Text = icon,
-                TextColor3 = RED,
-                Font = Enum.Font.SourceSansBold,
-                TextSize = 18
-            })
-        end
-
-        button.MouseButton1Click:Connect(function()
-            if callback then callback() end
-        end)
-
-        return button
-    end
+    -- 5. Кнопка (оставлена, но без иконки - обычная кнопка)
+    -- (Эта функция уже есть ниже в старых элементах)
 
     -- 6. Поле ввода числа (NumberBox)
     function self:NumberBox(text, min, max, default, callback)
@@ -514,7 +482,7 @@ function library:CreateWindow(title)
         return container
     end
 
-    --=== СОХРАНЕНИЕ СТАРЫХ ЭЛЕМЕНТОВ (немного улучшенных) ===--
+    --=== СОХРАНЕНИЕ СТАРЫХ ЭЛЕМЕНТОВ ===--
 
     function self:Button(text, callback)
         local b = Create("TextButton", {
@@ -653,6 +621,11 @@ function library:CreateWindow(title)
     -- Установить позицию окна
     function self:SetPosition(xScale, xOffset, yScale, yOffset)
         Main.Position = UDim2.new(xScale, xOffset, yScale, yOffset)
+    end
+
+    -- Функция для изменения заголовка окна
+    function self:SetTitle(newTitle)
+        Title.Text = newTitle or "c00lgui UI"
     end
 
     return self
