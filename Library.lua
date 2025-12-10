@@ -1,817 +1,661 @@
--- c00lgui-style UI Library (Extended) - Safe UI only
--- Usage: local ui = loadstring(game:HttpGet("https://raw.githubusercontent.com/USER/REPO/main/ui.lua"))()
--- Author: generated for you
--- Features:
--- Window with drag, pages (< >), grid layout
--- Button, Toggle, Slider (numeric), Dropdown, Textbox, Keybind, Separator, Label
--- Elements produce callbacks and return handles to change state
+-- c00lgui-style UI Library (Enhanced version)
+-- Сохраняет оригинальный черно-красный дизайн
+-- Добавлены новые элементы и функции
 
 local library = {}
-library.__index = library
 
--- ======= Utilities =======
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
-
-local function Create(class, props)
-    local inst = Instance.new(class)
-    if props then
-        for k,v in pairs(props) do
-            pcall(function() inst[k] = v end)
-        end
-    end
-    return inst
+--=== UTILS ===--
+local function Create(obj, props)
+    local o = Instance.new(obj)
+    for k,v in pairs(props) do o[k] = v end
+    return o
 end
 
-local function clamp(n, a, b) if n < a then return a end if n > b then return b end return n end
-local function round(n) return math.floor(n + 0.5) end
+local RED = Color3.fromRGB(255, 0, 0)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local BLACK = Color3.fromRGB(0, 0, 0)
 
-local RED = Color3.fromRGB(255,0,0)
-local BG = Color3.fromRGB(0,0,0)
-local TXT = Color3.fromRGB(255,255,255)
-local BORDER = RED
+--=== MAIN WINDOW ===--
+function library:CreateWindow(title)
+    local self = {}
 
--- ======= Core Window Creator =======
-function library:CreateWindow(title, opts)
-    opts = opts or {}
-    local self = setmetatable({}, library)
-
-    -- ScreenGui
-    local screenGui = Create("ScreenGui", {
-        Name = opts.Name or "c00lgui_UI",
-        ResetOnSpawn = false,
-        IgnoreGuiInset = true,
-        Parent = (opts.Parent or game.CoreGui)
+    local ScreenGui = Create("ScreenGui", {
+        Parent = game.CoreGui,
+        Name = "c00lgui_UI_" .. math.random(10000, 99999)
     })
 
-    -- MAIN FRAME
     local Main = Create("Frame", {
-        Name = "Main",
-        Parent = screenGui,
-        Size = UDim2.new(0, 420, 0, 450),
-        Position = UDim2.new(0.5, -210, 0.5, -225),
-        BackgroundColor3 = BG,
-        BorderColor3 = BORDER,
+        Parent = ScreenGui,
+        Size = UDim2.new(0, 450, 0, 500),
+        Position = UDim2.new(0.5, -225, 0.5, -250),
+        BackgroundColor3 = BLACK,
+        BorderColor3 = RED,
         BorderSizePixel = 2,
-        Active = true
+        Active = true,
+        Draggable = false  -- Будет включено после добавления drag-функции
     })
 
-    -- Titlebar
-    -- (внутри CreateWindow, после создания Main frame)
+    -- Добавляем возможность перетаскивания
+    local dragging = false
+    local dragInput, dragStart, startPos
 
--- Добавим ZIndex-ранжирование
-    Main.ClipsDescendants = true
-    
-    -- Переназначим создание Title, Content, Pages и т.п. с ZIndex
-    Title.ZIndex = 2
-    Content.ZIndex = 1
-    -- Когда создаёшь страницы (frames) — укажи ZIndex = 1 или 2 по необходимости
-    
-    -- ===== Drag (по заголовку Title) =====
-    do
-        local UIS = game:GetService("UserInputService")
-        local dragging = false
-        local dragStart
-        local startPos
-    
-        Title.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = Main.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-    
-        Title.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                dragInput = input
-            end
-        end)
-    
-        UIS.InputChanged:Connect(function(input)
-            if dragging and input == dragInput then
-                local delta = input.Position - dragStart
-                Main.Position = UDim2.new(
-                    startPos.X.Scale,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale,
-                    startPos.Y.Offset + delta.Y
-                )
-            end
-        end)
-    end
-    
-    -- ===== Resize: ручка в правом-нижнем углу =====
-    do
-        local UIS = game:GetService("UserInputService")
-        local resizer = Instance.new("Frame")
-        resizer.Name = "Resizer"
-        resizer.Size = UDim2.new(0, 16, 0, 16)
-        resizer.AnchorPoint = Vector2.new(1, 1)
-        resizer.Position = UDim2.new(1, 0, 1, 0)
-        resizer.BackgroundColor3 = BORDER
-        resizer.BorderSizePixel = 0
-        resizer.Parent = Main
-        resizer.ZIndex = 3
-    
-        local resizing = false
-        local startMouse, startSize
-    
-        resizer.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                resizing = true
-                startMouse = UIS:GetMouseLocation()
-                startSize = Main.Size
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        resizing = false
-                    end
-                end)
-            end
-        end)
-    
-        UIS.InputChanged:Connect(function(input)
-            if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = UIS:GetMouseLocation() - startMouse
-                Main.Size = UDim2.new(
-                    startSize.X.Scale,
-                    startSize.X.Offset + delta.X,
-                    startSize.Y.Scale,
-                    startSize.Y.Offset + delta.Y
-                )
-            end
-        end)
-    end
-
--- После этого — остальной UI: страницы, элементы, layout...
-
-
-    -- Content frame and pages container
-    local Content = Create("Frame", {
+    local Title = Create("TextLabel", {
         Parent = Main,
-        Name = "Content",
-        Size = UDim2.new(1, 0, 1, -70),
-        Position = UDim2.new(0, 0, 0, 35),
-        BackgroundTransparency = 1
-    })
-
-    local PagesContainer = Create("Frame", {
-        Parent = Content,
-        Name = "Pages",
-        Size = UDim2.new(1,0,1,0),
-        BackgroundTransparency = 1
-    })
-
-    -- Close button
-    local CloseBtn = Create("TextButton", {
-        Parent = Main,
-        Name = "Close",
-        Size = UDim2.new(1,0,0,35),
-        Position = UDim2.new(0,0,1,-35),
-        BackgroundColor3 = BG,
-        BorderColor3 = BORDER,
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundColor3 = BLACK,
+        BorderColor3 = RED,
         BorderSizePixel = 2,
-        Text = "Close",
-        TextColor3 = TXT,
+        Text = title or "c00lgui UI",
+        TextColor3 = WHITE,
         Font = Enum.Font.SourceSansBold,
-        TextSize = 18
+        TextSize = 20
     })
 
-    CloseBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+    -- Функция перетаскивания окна
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
 
-    -- Dragging (only when clicking Title)
-    do
-        local dragging = false
-        local dragInput, dragStart, startPos
-
-        local function update(input)
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    Title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = Main.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
         end
-
-        Title.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = Main.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-
-        Title.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                dragInput = input
-            end
-        end)
-
-        UserInputService.InputChanged:Connect(function(input)
-            if input == dragInput and dragging then
-                update(input)
-            end
-        end)
-    end
-
-    -- internal state
-    self._screenGui = screenGui
-    self._main = Main
-    self._pagesContainer = PagesContainer
-    self._pages = {} -- list of pages {frame, name, elements = {}}
-    self._currentPage = 1
-
-    -- ===== Page System =====
-    function self:AddPage(name)
-        name = name or ("Page "..(#self._pages + 1))
-        local pageFrame = Create("Frame", {
-            Parent = PagesContainer,
-            Name = "Page_"..#self._pages+1,
-            BackgroundTransparency = 1,
-            Size = UDim2.new(1,0,1,0),
-            Position = UDim2.new(0,0,0,0)
-        })
-
-        -- Scrolling container inside page
-        local scroll = Create("ScrollingFrame", {
-            Parent = pageFrame,
-            Name = "Scroll",
-            Size = UDim2.new(1,0,1,0),
-            CanvasSize = UDim2.new(0,0,0,0),
-            ScrollBarThickness = 6,
-            BackgroundTransparency = 1,
-            VerticalScrollBarInset = Enum.ScrollBarInset.Always
-        })
-        local grid = Create("UIGridLayout", {
-            Parent = scroll,
-            CellSize = UDim2.new(0, 200, 0, 36),
-            FillDirectionMaxCells = 2,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
-            VerticalAlignment = Enum.VerticalAlignment.Top,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0,6)
-        })
-
-        grid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            local s = grid.AbsoluteContentSize
-            scroll.CanvasSize = UDim2.new(0,0,s.Y + 8)
-        end)
-
-        local page = {
-            name = name,
-            frame = pageFrame,
-            scroll = scroll,
-            grid = grid,
-            elements = {}
-        }
-        table.insert(self._pages, page)
-        self:_updatePageLabel()
-        self:_showPage(#self._pages)
-        return page
-    end
-
-    function self:_updatePageLabel()
-        PageLabel.Text = ("Page %d / %d"):format(self._currentPage, #self._pages)
-    end
-
-    function self:_showPage(index)
-        if #self._pages == 0 then return end
-        index = clamp(index, 1, #self._pages)
-        for i, p in ipairs(self._pages) do
-            p.frame.Visible = (i == index)
-        end
-        self._currentPage = index
-        self:_updatePageLabel()
-    end
-
-    ArrowLeft.MouseButton1Click:Connect(function()
-        local i = self._currentPage - 1
-        if i < 1 then i = #self._pages end
-        self:_showPage(i)
-    end)
-    ArrowRight.MouseButton1Click:Connect(function()
-        local i = self._currentPage + 1
-        if i > #self._pages then i = 1 end
-        self:_showPage(i)
     end)
 
-    -- Create initial page if none
-    if #self._pages == 0 then self:AddPage("Main") end
+    Title.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
 
-    -- ====== Elements Factories ======
-    -- Common element style helper
-    local function baseButton(parent, text)
-        local b = Create("TextButton", {
-            Parent = parent,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundColor3 = BG,
-            BorderColor3 = BORDER,
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            updateDrag(input)
+        end
+    end)
+
+    local Content = Create("ScrollingFrame", {  -- Изменено на ScrollingFrame для поддержки многих элементов
+        Parent = Main,
+        Size = UDim2.new(1, 0, 1, -105),
+        Position = UDim2.new(0, 0, 0, 35),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 5,
+        ScrollBarImageColor3 = RED,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y
+    })
+
+    local UIGrid = Create("UIGridLayout", {
+        Parent = Content,
+        CellSize = UDim2.new(0, 215, 0, 40),
+        FillDirectionMaxCells = 2,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        VerticalAlignment = Enum.VerticalAlignment.Top,
+        CellPadding = UDim2.new(0, 5, 0, 5)
+    })
+
+    local Close = Create("TextButton", {
+        Parent = Main,
+        Size = UDim2.new(1, 0, 0, 35),
+        Position = UDim2.new(0, 0, 1, -35),
+        BackgroundColor3 = BLACK,
+        BorderColor3 = RED,
+        BorderSizePixel = 2,
+        Text = "Закрыть",
+        TextColor3 = WHITE,
+        Font = Enum.Font.SourceSansBold,
+        TextSize = 20
+    })
+
+    Close.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+
+    --=== НОВЫЕ ЭЛЕМЕНТЫ ===--
+
+    -- 1. Текстовое поле (TextBox)
+    function self:TextBox(text, placeholder, callback)
+        local container = Create("Frame", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
             BorderSizePixel = 2,
-            Text = text or "",
-            TextColor3 = TXT,
+            Size = UDim2.new(0, 215, 0, 40)
+        })
+
+        local label = Create("TextLabel", {
+            Parent = container,
+            Size = UDim2.new(1, 0, 0, 15),
+            BackgroundTransparency = 1,
+            Text = text,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSans,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        local textBox = Create("TextBox", {
+            Parent = container,
+            Size = UDim2.new(1, -10, 0, 20),
+            Position = UDim2.new(0, 5, 0, 18),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Text = "",
+            PlaceholderText = placeholder or "Введите текст...",
+            TextColor3 = WHITE,
             Font = Enum.Font.SourceSans,
             TextSize = 16,
-            AutoButtonColor = false
+            ClearTextOnFocus = false
         })
-        return b
+
+        textBox.FocusLost:Connect(function(enterPressed)
+            if callback and enterPressed then
+                callback(textBox.Text)
+            end
+        end)
+
+        return container
     end
 
-    -- Button
-    function self:AddButton(text, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        local b = baseButton(page.scroll, text)
-        b.MouseButton1Click:Connect(function() pcall(callback) end)
-        local element = {type="button", instance=b}
-        table.insert(page.elements, element)
-        return element
-    end
+    -- 2. Выпадающий список (Dropdown)
+    function self:Dropdown(text, options, default, callback)
+        local container = Create("Frame", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 2,
+            Size = UDim2.new(0, 215, 0, 40),
+            ClipsDescendants = true
+        })
 
-    -- Label (non-interactive)
-    function self:AddLabel(text, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        local lbl = Create("TextLabel", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
+        local label = Create("TextLabel", {
+            Parent = container,
+            Size = UDim2.new(1, 0, 0, 15),
             BackgroundTransparency = 1,
-            Text = text or "",
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSansSemibold,
+            Text = text,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSans,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        local dropdownBtn = Create("TextButton", {
+            Parent = container,
+            Size = UDim2.new(1, -10, 0, 20),
+            Position = UDim2.new(0, 5, 0, 18),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Text = options[default] or "Выберите...",
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSans,
             TextSize = 16
         })
-        local element = {type="label", instance=lbl}
-        table.insert(page.elements, element)
-        return element
-    end
 
-    -- Separator (thin line)
-    function self:AddSeparator(text, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        local frame = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
-        })
-        local line = Create("Frame", {
-            Parent = frame,
-            Size = UDim2.new(1,-10,0,2),
-            Position = UDim2.new(0,5,0,17),
-            BackgroundColor3 = BORDER,
-            BorderSizePixel = 0
-        })
-        local lbl = Create("TextLabel", {
-            Parent = frame,
-            Size = UDim2.new(1, -20, 0, 16),
-            Position = UDim2.new(0,10,0,0),
-            BackgroundTransparency = 1,
-            Text = text or "",
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSans,
-            TextSize = 12
-        })
-        local element = {type="separator", instance=frame}
-        table.insert(page.elements, element)
-        return element
-    end
-
-    -- Toggle (with indicator)
-    function self:AddToggle(text, default, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        local container = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
-        })
-        local b = Create("TextButton", {
+        local dropdownOpen = false
+        local dropdownFrame = Create("Frame", {
             Parent = container,
-            Size = UDim2.new(1,0,1,0),
-            BackgroundColor3 = BG,
-            BorderColor3 = BORDER,
-            BorderSizePixel = 2,
-            Text = text or "",
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSans,
-            TextSize = 16,
-            AutoButtonColor = false
-        })
-        local indicator = Create("Frame", {
-            Parent = container,
-            Size = UDim2.new(0,24,0,24),
-            Position = UDim2.new(1, -28, 0, 6),
-            BackgroundColor3 = Color3.fromRGB(40,40,40),
-            BorderColor3 = BORDER,
-            BorderSizePixel = 2
-        })
-        local state = default and true or false
-        local check = Create("Frame", {
-            Parent = indicator,
-            Size = state and UDim2.new(1,0,1,0) or UDim2.new(0,0,1,0),
-            BackgroundColor3 = BORDER,
-            BorderSizePixel = 0
+            Size = UDim2.new(1, -10, 0, 0),
+            Position = UDim2.new(0, 5, 0, 40),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Visible = false,
+            ClipsDescendants = true
         })
 
-        local function set(val)
-            state = not not val
-            if state then
-                check:TweenSize(UDim2.new(1,0,1,0),"Out","Quad",0.15,true)
-            else
-                check:TweenSize(UDim2.new(0,0,1,0),"Out","Quad",0.15,true)
+        local UIListLayout = Create("UIListLayout", {
+            Parent = dropdownFrame,
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+
+        dropdownBtn.MouseButton1Click:Connect(function()
+            dropdownOpen = not dropdownOpen
+            dropdownFrame.Visible = dropdownOpen
+            
+            if dropdownOpen then
+                dropdownFrame.Size = UDim2.new(1, -10, 0, math.min(#options * 25, 100))
             end
-            pcall(callback, state)
-        end
-
-        b.MouseButton1Click:Connect(function()
-            set(not state)
         end)
 
-        local element = {
-            type="toggle",
-            instance=container,
-            get = function() return state end,
-            set = set
-        }
-        table.insert(page.elements, element)
-        return element
+        local selectedValue = default
+        for i, option in pairs(options) do
+            local optionBtn = Create("TextButton", {
+                Parent = dropdownFrame,
+                Size = UDim2.new(1, 0, 0, 25),
+                BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+                BorderColor3 = RED,
+                BorderSizePixel = 1,
+                Text = option,
+                TextColor3 = WHITE,
+                Font = Enum.Font.SourceSans,
+                TextSize = 14,
+                LayoutOrder = i
+            })
+
+            optionBtn.MouseButton1Click:Connect(function()
+                selectedValue = i
+                dropdownBtn.Text = option
+                dropdownOpen = false
+                dropdownFrame.Visible = false
+                if callback then callback(i, option) end
+            end)
+        end
+
+        -- Закрытие dropdown при клике вне его
+        game:GetService("UserInputService").InputBegan:Connect(function(input)
+            if dropdownOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+                local absPos = container.AbsolutePosition
+                local absSize = container.AbsoluteSize
+                
+                if not (mousePos.X >= absPos.X and mousePos.X <= absPos.X + absSize.X and
+                       mousePos.Y >= absPos.Y and mousePos.Y <= absPos.Y + absSize.Y + 100) then
+                    dropdownOpen = false
+                    dropdownFrame.Visible = false
+                end
+            end
+        end)
+
+        return container
     end
 
-    -- Slider
-    function self:AddSlider(text, min, max, default, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        min = min or 0; max = max or 100
-        default = default or min
-        local value = clamp(default, min, max)
-
-        local frame = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
-        })
+    -- 3. Метка (Label)
+    function self:Label(text)
         local label = Create("TextLabel", {
-            Parent = frame,
-            Size = UDim2.new(1,0,0,16),
-            Position = UDim2.new(0,0,0,0),
+            Parent = Content,
+            Size = UDim2.new(0, 215, 0, 25),
             BackgroundTransparency = 1,
-            Text = (text or "Slider").." : "..tostring(value),
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSans,
-            TextSize = 14,
+            Text = text,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 16,
             TextXAlignment = Enum.TextXAlignment.Left
         })
-        local bar = Create("Frame", {
-            Parent = frame,
-            Size = UDim2.new(1, -10, 0, 12),
-            Position = UDim2.new(0,5,0,20),
-            BackgroundColor3 = Color3.fromRGB(20,20,20),
-            BorderColor3 = BORDER,
-            BorderSizePixel = 2
-        })
-        local fill = Create("Frame", {
-            Parent = bar,
-            Size = UDim2.new((value - min)/(max - min), 0, 1, 0),
-            BackgroundColor3 = BORDER,
+        return label
+    end
+
+    -- 4. Разделитель (Separator)
+    function self:Separator()
+        local separator = Create("Frame", {
+            Parent = Content,
+            Size = UDim2.new(0, 215, 0, 2),
+            BackgroundColor3 = RED,
             BorderSizePixel = 0
         })
-
-        local dragging = false
-        local connection
-
-        bar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                connection = RunService.RenderStepped:Connect(function()
-                    local absPos = bar.AbsolutePosition.X
-                    local absSize = bar.AbsoluteSize.X
-                    local mouseX = UserInputService:GetMouseLocation().X
-                    local x = clamp(mouseX - absPos, 0, absSize)
-                    local newVal = min + (max - min) * (x / absSize)
-                    newVal = math.floor(newVal + 0.5)
-                    value = newVal
-                    label.Text = (text or "Slider").." : "..tostring(value)
-                    fill.Size = UDim2.new(x/absSize, 0, 1, 0)
-                    pcall(callback, value)
-                end)
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                        if connection then connection:Disconnect() connection = nil end
-                    end
-                end)
-            end
-        end)
-
-        local element = {
-            type="slider",
-            instance=frame,
-            get = function() return value end,
-            set = function(v)
-                value = clamp(v, min, max)
-                local rel = (value - min) / (max - min)
-                fill.Size = UDim2.new(rel, 0, 1, 0)
-                label.Text = (text or "Slider").." : "..tostring(value)
-                pcall(callback, value)
-            end
-        }
-        table.insert(page.elements, element)
-        return element
+        return separator
     end
 
-    -- Dropdown
-    function self:AddDropdown(text, options, defaultIndex, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        options = options or {}
-        local selected = defaultIndex and options[defaultIndex] or options[1] or nil
+    -- 5. Кнопка с иконкой (IconButton)
+    function self:IconButton(text, icon, callback)
+        local button = Create("TextButton", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 2,
+            Text = "  " .. text,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
 
-        local container = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
-        })
-        local mainBtn = Create("TextButton", {
-            Parent = container,
-            Size = UDim2.new(1,0,1,0),
-            BackgroundColor3 = BG,
-            BorderColor3 = BORDER,
-            BorderSizePixel = 2,
-            Text = (text or "Dropdown")..": "..(selected or "None"),
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSans,
-            TextSize = 14,
-            AutoButtonColor = false
-        })
-        local list = Create("Frame", {
-            Parent = container,
-            Size = UDim2.new(1,0,0,0),
-            Position = UDim2.new(0,0,1,2),
-            BackgroundColor3 = BG,
-            BorderColor3 = BORDER,
-            BorderSizePixel = 2,
-            ClipsDescendants = true,
-            Visible = false
-        })
-        local uiList = Create("UIListLayout", {Parent = list, SortOrder = Enum.SortOrder.LayoutOrder})
-        local function refreshList()
-            for _, ch in pairs(list:GetChildren()) do
-                if ch:IsA("TextButton") then ch:Destroy() end
-            end
-            for i, opt in ipairs(options) do
-                local optBtn = Create("TextButton", {
-                    Parent = list,
-                    Size = UDim2.new(1,0,0,28),
-                    BackgroundTransparency = 1,
-                    Text = tostring(opt),
-                    TextColor3 = TXT,
-                    Font = Enum.Font.SourceSans,
-                    TextSize = 14,
-                    AutoButtonColor = false
-                })
-                optBtn.MouseButton1Click:Connect(function()
-                    selected = opt
-                    mainBtn.Text = (text or "Dropdown")..": "..tostring(selected)
-                    list.Visible = false
-                    pcall(callback, selected, i)
-                end)
-            end
-            local total = #options * 28
-            list.Size = UDim2.new(1,0,0, math.min(total, 28*5))
+        if icon then
+            local iconLabel = Create("TextLabel", {
+                Parent = button,
+                Size = UDim2.new(0, 20, 1, 0),
+                Position = UDim2.new(0, 5, 0, 0),
+                BackgroundTransparency = 1,
+                Text = icon,
+                TextColor3 = RED,
+                Font = Enum.Font.SourceSansBold,
+                TextSize = 18
+            })
         end
-        refreshList()
 
-        mainBtn.MouseButton1Click:Connect(function()
-            list.Visible = not list.Visible
+        button.MouseButton1Click:Connect(function()
+            if callback then callback() end
         end)
 
-        local element = {
-            type="dropdown",
-            instance=container,
-            get = function() return selected end,
-            set = function(v)
-                selected = v
-                mainBtn.Text = (text or "Dropdown")..": "..tostring(selected)
-                pcall(callback, selected)
-            end,
-            options = options,
-            refresh = function(newOptions)
-                options = newOptions or {}
-                refreshList()
-            end
-        }
-        table.insert(page.elements, element)
-        return element
+        return button
     end
 
-    -- Textbox
-    function self:AddTextbox(labelText, placeholder, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        local frame = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
+    -- 6. Поле ввода числа (NumberBox)
+    function self:NumberBox(text, min, max, default, callback)
+        local container = Create("Frame", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 2,
+            Size = UDim2.new(0, 215, 0, 40)
         })
-        local lbl = Create("TextLabel", {
-            Parent = frame,
-            Size = UDim2.new(0.45,0,1,0),
+
+        local label = Create("TextLabel", {
+            Parent = container,
+            Size = UDim2.new(0.6, 0, 0, 15),
             BackgroundTransparency = 1,
-            Text = labelText or "",
-            TextColor3 = TXT,
+            Text = text,
+            TextColor3 = WHITE,
             Font = Enum.Font.SourceSans,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left
         })
-        local tb = Create("TextBox", {
-            Parent = frame,
-            Size = UDim2.new(0.55, -6, 1, 0),
-            Position = UDim2.new(0.45,6,0,0),
-            BackgroundColor3 = Color3.fromRGB(20,20,20),
-            BorderColor3 = BORDER,
+
+        local valueLabel = Create("TextLabel", {
+            Parent = container,
+            Size = UDim2.new(0.4, 0, 0, 15),
+            Position = UDim2.new(0.6, 0, 0, 0),
+            BackgroundTransparency = 1,
+            Text = tostring(default),
+            TextColor3 = RED,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Right
+        })
+
+        local value = math.clamp(default or min, min, max)
+
+        local decreaseBtn = Create("TextButton", {
+            Parent = container,
+            Size = UDim2.new(0, 30, 0, 20),
+            Position = UDim2.new(0, 5, 0, 18),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Text = "-",
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 18
+        })
+
+        local increaseBtn = Create("TextButton", {
+            Parent = container,
+            Size = UDim2.new(0, 30, 0, 20),
+            Position = UDim2.new(1, -35, 0, 18),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Text = "+",
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 18
+        })
+
+        local function updateValue(newValue)
+            value = math.clamp(newValue, min, max)
+            valueLabel.Text = tostring(value)
+            if callback then callback(value) end
+        end
+
+        decreaseBtn.MouseButton1Click:Connect(function()
+            updateValue(value - 1)
+        end)
+
+        increaseBtn.MouseButton1Click:Connect(function()
+            updateValue(value + 1)
+        end)
+
+        -- Быстрое изменение при зажатии
+        local function startIncrement(amount)
+            local conn
+            conn = game:GetService("RunService").RenderStepped:Connect(function()
+                updateValue(value + amount)
+            end)
+            
+            return function()
+                conn:Disconnect()
+            end
+        end
+
+        decreaseBtn.MouseButton1Down:Connect(function()
+            local stop = startIncrement(-1)
+            decreaseBtn.MouseButton1Up:Wait()
+            stop()
+        end)
+
+        increaseBtn.MouseButton1Down:Connect(function()
+            local stop = startIncrement(1)
+            increaseBtn.MouseButton1Up:Wait()
+            stop()
+        end)
+
+        return container
+    end
+
+    -- 7. Ключ-биндер (Keybind)
+    function self:Keybind(text, defaultKey, callback)
+        local container = Create("Frame", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
             BorderSizePixel = 2,
-            Text = "",
-            PlaceholderText = placeholder or "",
-            TextColor3 = TXT,
+            Size = UDim2.new(0, 215, 0, 40)
+        })
+
+        local label = Create("TextLabel", {
+            Parent = container,
+            Size = UDim2.new(0.7, 0, 0, 15),
+            BackgroundTransparency = 1,
+            Text = text,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSans,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        local keyLabel = Create("TextButton", {
+            Parent = container,
+            Size = UDim2.new(0.3, -10, 0, 20),
+            Position = UDim2.new(0.7, 5, 0, 18),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1,
+            Text = defaultKey or "None",
+            TextColor3 = WHITE,
             Font = Enum.Font.SourceSans,
             TextSize = 14
         })
-        tb.ClearTextOnFocus = false
-        tb.FocusLost:Connect(function(enterPressed)
-            pcall(callback, tb.Text, enterPressed)
+
+        local listening = false
+        local currentKey = defaultKey
+
+        keyLabel.MouseButton1Click:Connect(function()
+            listening = true
+            keyLabel.Text = "..."
+            keyLabel.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
         end)
-        local element = {
-            type="textbox",
-            instance=frame,
-            get = function() return tb.Text end,
-            set = function(v) tb.Text = tostring(v) end
-        }
-        table.insert(page.elements, element)
-        return element
-    end
-
-    -- Keybind
-    function self:AddKeybind(labelText, defaultKey, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        local frame = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
-        })
-        local lbl = Create("TextLabel", {
-            Parent = frame,
-            Size = UDim2.new(0.55,0,1,0),
-            BackgroundTransparency = 1,
-            Text = labelText or "Keybind",
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSans,
-            TextSize = 14,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-        local btn = Create("TextButton", {
-            Parent = frame,
-            Size = UDim2.new(0.45, -6, 1, 0),
-            Position = UDim2.new(0.55,6,0,0),
-            BackgroundColor3 = Color3.fromRGB(20,20,20),
-            BorderColor3 = BORDER,
-            BorderSizePixel = 2,
-            Text = defaultKey or "None",
-            TextColor3 = TXT,
-            Font = Enum.Font.SourceSans,
-            TextSize = 14,
-            AutoButtonColor = false
-        })
-
-        local waiting = false
-        local key = defaultKey
 
         local conn
-        btn.MouseButton1Click:Connect(function()
-            if waiting then return end
-            waiting = true
-            btn.Text = "Press a key..."
-            conn = UserInputService.InputBegan:Connect(function(input, gpe)
-                if not gpe and input.UserInputType == Enum.UserInputType.Keyboard then
-                    key = input.KeyCode.Name
-                    btn.Text = key
-                    waiting = false
-                    if conn then conn:Disconnect(); conn = nil end
-                    pcall(callback, key)
+        conn = game:GetService("UserInputService").InputBegan:Connect(function(input)
+            if listening then
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    currentKey = input.KeyCode.Name
+                    keyLabel.Text = currentKey
+                    listening = false
+                    keyLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                    
+                    if callback then callback(currentKey) end
+                elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    currentKey = "MouseButton1"
+                    keyLabel.Text = "MB1"
+                    listening = false
+                    keyLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                    
+                    if callback then callback(currentKey) end
+                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    currentKey = "MouseButton2"
+                    keyLabel.Text = "MB2"
+                    listening = false
+                    keyLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                    
+                    if callback then callback(currentKey) end
                 end
-            end)
-        end)
-
-        -- Fire callback when key pressed
-        local keyConn
-        keyConn = UserInputService.InputBegan:Connect(function(inp, gpe)
-            if gpe then return end
-            if inp.UserInputType == Enum.UserInputType.Keyboard then
-                if tostring(inp.KeyCode.Name) == tostring(key) then
-                    pcall(callback, key)
-                end
+            elseif input.KeyCode.Name == currentKey and not listening then
+                if callback then callback(currentKey, true) end
             end
         end)
 
-        local element = {
-            type="keybind",
-            instance=frame,
-            get = function() return key end,
-            set = function(k) key = k; btn.Text = tostring(k) end,
-            _disconnect = function()
-                if keyConn then keyConn:Disconnect(); keyConn = nil end
+        return container
+    end
+
+    --=== СОХРАНЕНИЕ СТАРЫХ ЭЛЕМЕНТОВ (немного улучшенных) ===--
+
+    function self:Button(text, callback)
+        local b = Create("TextButton", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 2,
+            Text = text,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 18
+        })
+        b.MouseButton1Click:Connect(function()
+            if callback then callback() end
+        end)
+        return b
+    end
+
+    function self:Toggle(text, default, callback)
+        local value = default or false
+
+        local b = Create("TextButton", {
+            Parent = Content,
+            BackgroundColor3 = value and Color3.fromRGB(40, 0, 0) or BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 2,
+            Text = text .. " : " .. (value and "ON" or "OFF"),
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 16
+        })
+
+        b.MouseButton1Click:Connect(function()
+            value = not value
+            b.Text = text .. " : " .. (value and "ON" or "OFF")
+            b.BackgroundColor3 = value and Color3.fromRGB(40, 0, 0) or BLACK
+            if callback then callback(value) end
+        end)
+
+        return b
+    end
+
+    function self:Slider(text, min, max, default, callback)
+        local sliderFrame = Create("Frame", {
+            Parent = Content,
+            BackgroundColor3 = BLACK,
+            BorderColor3 = RED,
+            BorderSizePixel = 2,
+            Size = UDim2.new(0, 215, 0, 50)
+        })
+
+        local label = Create("TextLabel", {
+            Parent = sliderFrame,
+            Size = UDim2.new(1, 0, 0, 20),
+            BackgroundTransparency = 1,
+            Text = text .. " : " .. default,
+            TextColor3 = WHITE,
+            Font = Enum.Font.SourceSans,
+            TextSize = 16
+        })
+
+        local bar = Create("Frame", {
+            Parent = sliderFrame,
+            Size = UDim2.new(1, -20, 0, 15),
+            Position = UDim2.new(0, 10, 0, 30),
+            BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+            BorderColor3 = RED,
+            BorderSizePixel = 1
+        })
+
+        local fill = Create("Frame", {
+            Parent = bar,
+            Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+            BackgroundColor3 = RED,
+            BorderSizePixel = 0
+        })
+
+        local valueText = Create("TextLabel", {
+            Parent = sliderFrame,
+            Size = UDim2.new(0, 40, 0, 15),
+            Position = UDim2.new(1, -45, 0, 10),
+            BackgroundTransparency = 1,
+            Text = tostring(default),
+            TextColor3 = RED,
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Right
+        })
+
+        bar.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+                local conn
+                conn = game:GetService("RunService").RenderStepped:Connect(function()
+                    local mouse = game:GetService("UserInputService"):GetMouseLocation().X
+                    local x = math.clamp(mouse - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+                    fill.Size = UDim2.new(x / bar.AbsoluteSize.X, 0, 1, 0)
+
+                    local value = math.floor(min + (max - min) * (x / bar.AbsoluteSize.X))
+                    label.Text = text .. " : " .. value
+                    valueText.Text = tostring(value)
+                    if callback then callback(value) end
+                end)
+
+                inp.Changed:Connect(function()
+                    if inp.UserInputState == Enum.UserInputState.End then
+                        conn:Disconnect()
+                    end
+                end)
             end
-        }
-        table.insert(page.elements, element)
-        return element
+        end)
+
+        return sliderFrame
     end
 
-    -- Dynamic "table-like" generator (create grid of buttons by labels)
-    function self:AddGrid(labels, perRow, callback, pageIndex)
-        pageIndex = pageIndex or self._currentPage
-        local page = self._pages[pageIndex]
-        perRow = perRow or 2
-        local container = Create("Frame", {
-            Parent = page.scroll,
-            Size = UDim2.new(0,200,0,36),
-            BackgroundTransparency = 1
-        })
-        local gridFrame = Create("Frame", {
-            Parent = container,
-            Size = UDim2.new(1,0,1,0),
-            BackgroundTransparency = 1
-        })
-        local uiGrid = Create("UIGridLayout", {
-            Parent = gridFrame,
-            CellSize = UDim2.new(0, (200 - (perRow-1)*6)/perRow, 0, 34),
-            FillDirectionMaxCells = perRow,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
-            VerticalAlignment = Enum.VerticalAlignment.Top,
-            Padding = UDim.new(0,6)
-        })
+    --=== ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ===--
 
-        for i, lbl in ipairs(labels) do
-            local b = Create("TextButton", {
-                Parent = gridFrame,
-                Size = UDim2.new(0, 100, 0, 34),
-                BackgroundColor3 = BG,
-                BorderColor3 = BORDER,
-                BorderSizePixel = 2,
-                Text = tostring(lbl) or ("Btn"..i),
-                TextColor3 = TXT,
-                Font = Enum.Font.SourceSans,
-                TextSize = 14,
-                AutoButtonColor = false
-            })
-            b.MouseButton1Click:Connect(function()
-                pcall(callback, lbl, i)
-            end)
-        end
-
-        local element = {type="grid", instance=container}
-        table.insert(page.elements, element)
-        return element
-    end
-
-    -- Expose function to switch to page by name
-    function self:SwitchToPage(nameOrIndex)
-        if type(nameOrIndex) == "number" then
-            self:_showPage(nameOrIndex)
-        else
-            for i,p in ipairs(self._pages) do
-                if p.name == nameOrIndex then
-                    self:_showPage(i)
-                    return
-                end
+    -- Функция для очистки всех элементов
+    function self:Clear()
+        for _, child in pairs(Content:GetChildren()) do
+            if child:IsA("Frame") or child:IsA("TextButton") or child:IsA("TextLabel") then
+                child:Destroy()
             end
         end
     end
 
-    -- Return API
-    self.screenGui = screenGui
-    self.main = Main
-    self.content = Content
+    -- Функция для показа/скрытия окна
+    function self:SetVisible(visible)
+        ScreenGui.Enabled = visible
+    end
+
+    -- Получить ссылку на ScreenGui
+    function self:GetGui()
+        return ScreenGui
+    end
+
+    -- Установить позицию окна
+    function self:SetPosition(xScale, xOffset, yScale, yOffset)
+        Main.Position = UDim2.new(xScale, xOffset, yScale, yOffset)
+    end
 
     return self
 end
 
--- Convenience: top-level factory
-local exported = {}
-exported.CreateWindow = function(title, opts)
-    local lib = {}
-    setmetatable(lib, {__index = library})
-    return library.CreateWindow(lib, title, opts)
-end
-
--- Return the module-like table
-return exported
-
+return library
